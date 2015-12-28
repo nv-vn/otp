@@ -1,0 +1,27 @@
+Name: OTP
+Version: 0.1
+OCamlVersion: >= 4.02
+Synopsis: OCaml Type Providers
+Authors: nv-vn <nv@cock.li>
+License: GPL
+
+FilesAB: src/swagger/META.ab
+
+PreInstallCommand: $ocamlfind install ppx_swagger src/swagger/META
+PreUninstallCommand: $ocamlfind remove ppx_swagger
+
+OASISFormat: 0.4
+BuildTools: ocamlbuild
+Plugins: META (0.4), DevFiles (0.4)
+
+Executable "ppx_swagger"
+  Path: src/swagger/
+  MainIs: swagger.ml
+  CompiledObject: best
+  BuildDepends: compiler-libs.common, ppx_tools.metaquot, lwt, cohttp.lwt, yojson
+
+Test "test_ppx_swagger"
+  Command: ocamlbuild -I src/swagger/ -package oUnit \
+                      -cflags '-ppx $ppx_swagger' \
+                      test/test_ppx_swagger.byte --
+  TestTools: ppx_swagger
