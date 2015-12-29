@@ -20,7 +20,7 @@ Executable "ppx_swagger"
   Path: src/swagger/
   MainIs: swagger.ml
   CompiledObject: best
-  BuildDepends: compiler-libs.common, ppx_tools.metaquot, lwt, cohttp.lwt, yojson
+  BuildDepends: compiler-libs.common, lwt, cohttp.lwt, yojson
 
 Test "test_ppx_swagger"
   Command: ocamlbuild -I src/swagger/ -package oUnit \
@@ -32,10 +32,10 @@ Executable "ppx_json_types"
   Path: src/json_types/
   MainIs: json_types.ml
   CompiledObject: best
-  BuildDepends: compiler-libs.common, ppx_tools.metaquot, lwt, cohttp.lwt, yojson
+  BuildDepends: compiler-libs.common, lwt, cohttp.lwt, yojson
 
 Test "test_json_types"
   Command: ocamlbuild -I src/json_types/ -package oUnit \
                       -cflags '-ppx $ppx_json_types' \
                       test/test_ppx_json_types.byte --
-  TestTools: ppx_json_types
+  TestTools: ppx_json_types, ppx_deriving, ppx_deriving_yojson
