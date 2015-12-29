@@ -10,11 +10,8 @@ open Cohttp_lwt_unix
 
 exception JsonException
 
-type json_type =
-  | Record of (string * string) list
-  | Union of (string * json_type) list
-  | Product of string list
-  | Alias of string
+type ct_or_tk =
+  Ct of core_type | Tk of type_kind
 
 let get_json url =
   Client.get (Uri.of_string url) >>= fun (resp, body) ->
@@ -27,10 +24,11 @@ let yj_to_string = function
 let rec make_record json loc =
   let open Yojson.Basic.Util in
   let items = to_list json in
-  make_alias json loc
-
-and make_union json loc =
-  make_product json loc
+  let pairs = List.map (fun x -> (x |> member "name" |> to_string,
+                                  x |> member "type" |> to_string)) items in
+  Ptype_record (List.map (fun (name, typ) ->
+                           Type.field ~loc {txt = name; loc = loc}
+                             (Typ.constr ~loc {txt = Lident typ; loc = loc} [])) pairs)
 
 and make_product json loc =
   let open Yojson.Basic.Util in
@@ -48,32 +46,33 @@ let type_of_url url loc =
     (* Now process the JSON *)
     let open Yojson.Basic.Util in
     let record  = json |> member "record"
-    and union   = json |> member "union"
     and product = json |> member "product"
     and alias   = json |> member "alias" in
-    return @@ match (record, union, product, alias) with
-    | (record, `Null, `Null, `Null)  -> make_record  record  loc
-    | (`Null, union, `Null, `Null)   -> make_union   union   loc
-    | (`Null, `Null, product, `Null) -> make_product product loc
-    | (`Null, `Null, `Null, alias)   -> make_alias   alias   loc
-    | (_, _, _, _) -> make_alias (`String "int") loc
+    return @@ match (record, product, alias) with
+    | (record, `Null, `Null)  -> Tk (make_record  record  loc)
+    | (`Null, product, `Null) -> Ct (make_product product loc)
+    | (`Null, `Null, alias)   -> Ct (make_alias   alias   loc)
+    | (_, _, _) -> Ct (make_alias (`String "int") loc)
 
 let json_type_mapper argv =
   { default_mapper with
-    typ = fun mapper typ ->
-      match typ with
-      | { ptyp_desc =
-          Ptyp_extension ({ txt = "json_type"; loc }, ptyp); _} ->
+    type_declaration = fun mapper type_decl ->
+      match type_decl with
+      | { ptype_attributes; ptype_name; ptype_manifest = Some {
+            ptyp_desc = Ptyp_extension ({txt = "json_type"; loc}, ptyp) } } ->
         begin match ptyp with
         | PStr [{ pstr_desc =
                   Pstr_eval ({ pexp_loc  = loc;
                                pexp_desc = Pexp_constant (Const_string (sym, None))}, _)}] ->
-          Lwt_unix.run @@ type_of_url sym loc
+          begin match Lwt_unix.run @@ type_of_url sym loc with
+          | Ct ct -> {type_decl with ptype_manifest = Some ct}
+          | Tk tk -> {type_decl with ptype_kind = tk; ptype_manifest = None}
+          end
         | _ ->
           raise (Location.Error (
                   Location.error ~loc "[%json_type ...] accepts a string, e.g. [%json_type \"http://google.com\"]"))
         end
-      | x -> default_mapper.typ mapper x;
+      | x -> default_mapper.type_declaration mapper x;
   }
 
 let _ = register "json_type" json_type_mapper
