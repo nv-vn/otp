@@ -5,10 +5,12 @@ Synopsis: OCaml Type Providers
 Authors: nv-vn <nv@cock.li>
 License: GPL
 
-FilesAB: src/swagger/META.ab
+FilesAB: src/swagger/META.ab, src/json_types/META.ab
 
 PreInstallCommand: $ocamlfind install ppx_swagger src/swagger/META
+PreInstallCommand: $ocamlfind install ppx_json_types src/json_types/META
 PreUninstallCommand: $ocamlfind remove ppx_swagger
+PreUninstallCommand: $ocamlfind remove ppx_json_types
 
 OASISFormat: 0.4
 BuildTools: ocamlbuild
@@ -25,3 +27,15 @@ Test "test_ppx_swagger"
                       -cflags '-ppx $ppx_swagger' \
                       test/test_ppx_swagger.byte --
   TestTools: ppx_swagger
+
+Executable "ppx_json_types"
+  Path: src/json_types/
+  MainIs: json_types.ml
+  CompiledObject: best
+  BuildDepends: compiler-libs.common, ppx_tools.metaquot, lwt, cohttp.lwt, yojson
+
+Test "test_json_types"
+  Command: ocamlbuild -I src/json_types/ -package oUnit \
+                      -cflags '-ppx $ppx_json_types' \
+                      test/test_ppx_json_types.byte --
+  TestTools: ppx_json_types
