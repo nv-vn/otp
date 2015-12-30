@@ -10,6 +10,12 @@ open Cohttp_lwt_unix
 
 exception JsonException
 
+type ty =
+  | Name of string
+  | List of ty
+  | Product of ty list
+  | Record of (string * ty) list
+
 type ct_or_tk =
   Ct of core_type | Tk of type_kind
 
@@ -27,7 +33,7 @@ let yj_to_string = function
   | `Null -> ""
   | any -> Yojson.Basic.Util.to_string any
 
-let rec make_record json loc =
+let make_record json loc =
   let open Yojson.Basic.Util in
   let items = to_list json in
   let pairs = List.map (fun x -> (x |> member "name" |> to_string,
@@ -60,16 +66,74 @@ let type_of_url url loc =
     | (`Null, `Null, alias)   -> Ct (make_alias   alias   loc)
     | (_, _, _) -> Ct (make_alias (`String "int") loc)
 
-let struct_of_url url mapper mapper' loc =
-  Mod.structure ~loc
-    [Str.module_ ~loc
-      (Mb.mk ~loc {txt = "Hide"; loc = loc}
-        (Mod.structure ~loc
-          [Str.type_ ~loc
-            [mapper.type_declaration mapper' (Type.mk ~loc {txt = "t"; loc = loc}
-              ~manifest:(Typ.extension ~loc
-                ({txt = "json_type"; loc = loc},
-                 PStr [Str.eval ~loc (Exp.constant ~loc (Const_string (url, None)))])))]]))]
+let rec ty_of_json json =
+  let open Yojson.Basic.Util in
+  match json |> member "kind" |> yj_to_string with
+  | "name" -> Name (json |> member "val" |> yj_to_string)
+  | "list" -> List (json |> member "val" |> ty_of_json)
+  | "product" ->
+    let items = json |> member "val" |> to_list in
+    Product (List.map (fun item -> ty_of_json item) items)
+  | "record" ->
+    let fields = json |> member "val" |> to_list in
+    Record (fields |> List.map (fun field ->
+      (field |> member "name" |> to_string, field |> member "type" |> ty_of_json)))
+  | _ -> Name "unit"
+
+let tconcat l r =
+  match l, r with
+  | {pstr_desc = Pstr_type lxs; pstr_loc}, {pstr_desc = Pstr_type rxs; _} ->
+    Str.type_ ~loc:pstr_loc (lxs @ rxs)
+  | _ -> raise JsonException
+
+let rec make_types name loc = function
+  | Name s ->
+    Str.type_ ~loc
+      [Type.mk ~loc {txt = name; loc = loc}
+        ~manifest:(Typ.constr ~loc {txt = Lident s; loc = loc} [])]
+  | List t ->
+    let dname = uniq name in
+    let dep = make_types dname loc t in
+    let dconstr = Typ.constr ~loc {txt = Lident dname; loc = loc} [] in
+    tconcat dep (Str.type_ ~loc
+                  [Type.mk ~loc {txt = name; loc = loc}
+                    ~manifest:(Typ.constr ~loc {txt = Lident "list"; loc = loc} [dconstr])]) 
+  | Product xs ->
+    begin
+      let items, names = create loc name xs in
+      let tuple = List.map (fun item -> Typ.constr ~loc {txt = Lident item; loc = loc} []) names in
+      tconcat items (Str.type_ ~loc
+                      [Type.mk {txt = name; loc = loc}
+                        ~manifest:(Typ.tuple ~loc tuple)])
+    end
+  | Record xs ->
+    begin
+      let types = List.map (fun (name, typ) -> typ) xs in
+      let items, names = create loc name types in
+      let fields = List.map2 (fun (name, typ) type_ ->
+                               Type.field ~loc {txt = name; loc = loc}
+                                 (Typ.constr {txt = Lident type_; loc = loc} [])) xs names in
+      tconcat items (Str.type_ ~loc
+                      [Type.mk {txt = name; loc = loc} ~kind:(Ptype_record fields)])
+    end
+
+and create loc name ?(items=Str.type_ ~loc []) ?(names=[]) = function
+  | [] -> items, names
+  | x :: xs ->
+    let n = uniq name in
+    let items' = tconcat items (make_types n loc x) in
+    create loc name ~items:items' ~names:(names @ [n]) xs
+
+
+let struct_of_url url loc =
+  get_json url >>= fun text ->
+    let json = Yojson.Basic.from_string text in
+    let ty = ty_of_json json in
+    let struct_members = make_types "t" loc ty in
+    return @@ Mod.structure ~loc
+      [Str.module_ ~loc
+        (Mb.mk ~loc {txt = "Hide"; loc = loc}
+          (Mod.structure ~loc [struct_members]))]
 
 let rec json_type_mapper argv =
   { default_mapper with
@@ -98,7 +162,7 @@ let rec json_type_mapper argv =
         | PStr [{ pstr_desc =
                   Pstr_eval ({ pexp_loc  = loc;
                                pexp_desc = Pexp_constant (Const_string (sym, None))}, _)}] ->
-          struct_of_url sym (json_type_mapper argv) mapper loc
+          Lwt_unix.run @@ struct_of_url sym loc
         | _ ->
           raise (Location.Error
                   (Location.error ~loc "[%json ...] accepts a string, e.g. [%json \"http://google.com\"]"))
