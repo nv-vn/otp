@@ -86,10 +86,16 @@ let tconcat l r =
     Str.type_ ~loc:pstr_loc (lxs @ rxs)
   | _ -> raise JsonException
 
+let deriving loc attrs =
+  let idents = List.map (fun attr -> Exp.ident ~loc {txt = Lident attr; loc = loc}) attrs in
+  [{txt = "deriving"; loc = loc},
+   PStr [Str.eval ~loc (Exp.tuple ~loc idents)]]
+
 let rec make_types name loc = function
   | Name s ->
     Str.type_ ~loc
       [Type.mk ~loc {txt = name; loc = loc}
+        ~attrs:(deriving loc ["show"; "yojson"])
         ~manifest:(Typ.constr ~loc {txt = Lident s; loc = loc} [])]
   | List t ->
     let dname = uniq name in
@@ -97,6 +103,7 @@ let rec make_types name loc = function
     let dconstr = Typ.constr ~loc {txt = Lident dname; loc = loc} [] in
     tconcat dep (Str.type_ ~loc
                   [Type.mk ~loc {txt = name; loc = loc}
+                    ~attrs:(deriving loc ["show"; "yojson"])
                     ~manifest:(Typ.constr ~loc {txt = Lident "list"; loc = loc} [dconstr])]) 
   | Product xs ->
     begin
@@ -104,6 +111,7 @@ let rec make_types name loc = function
       let tuple = List.map (fun item -> Typ.constr ~loc {txt = Lident item; loc = loc} []) names in
       tconcat items (Str.type_ ~loc
                       [Type.mk {txt = name; loc = loc}
+                        ~attrs:(deriving loc ["show"; "yojson"])
                         ~manifest:(Typ.tuple ~loc tuple)])
     end
   | Record xs ->
@@ -114,7 +122,9 @@ let rec make_types name loc = function
                                Type.field ~loc {txt = name; loc = loc}
                                  (Typ.constr {txt = Lident type_; loc = loc} [])) xs names in
       tconcat items (Str.type_ ~loc
-                      [Type.mk {txt = name; loc = loc} ~kind:(Ptype_record fields)])
+                      [Type.mk {txt = name; loc = loc}
+                        ~attrs:(deriving loc ["show"; "yojson"])
+                        ~kind:(Ptype_record fields)])
     end
 
 and create loc name ?(items=Str.type_ ~loc []) ?(names=[]) = function
@@ -133,7 +143,17 @@ let struct_of_url url loc =
     return @@ Mod.structure ~loc
       [Str.module_ ~loc
         (Mb.mk ~loc {txt = "Hide"; loc = loc}
-          (Mod.structure ~loc [struct_members]))]
+          (Mod.structure ~loc [struct_members]));
+       Str.type_ ~loc
+         [Type.mk {txt = "t"; loc = loc}
+           ~manifest:(Typ.constr ~loc {txt = Ldot (Lident "Hide", "t"); loc = loc} [])];
+       Str.value ~loc Nonrecursive
+         [Vb.mk ~loc (Pat.var ~loc {txt = "to_string"; loc = loc})
+                     (Exp.ident ~loc {txt = Ldot (Lident "Hide", "show_t"); loc = loc});
+          Vb.mk ~loc (Pat.var ~loc {txt = "to_json"; loc = loc})
+                     (Exp.ident ~loc {txt = Ldot (Lident "Hide", "t_to_yjson"); loc = loc});
+          Vb.mk ~loc (Pat.var ~loc {txt = "of_json"; loc = loc})
+                     (Exp.ident ~loc {txt = Ldot (Lident "Hide", "t_of_yojson"); loc = loc})]]
 
 let rec json_type_mapper argv =
   { default_mapper with

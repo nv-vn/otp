@@ -1,2 +1,2 @@
 version = "0.1"
-ppx = "ppx_json_types"
+ppx = "./ppx_json_types.native"
