@@ -1,0 +1,16 @@
+Name: OTP
+Version: 0.1
+OCamlVersion: >= 4.02
+Synopsis: OCaml Type Providers
+Authors: nv-vn <nv@cock.li>
+License: GPL
+
+OASISFormat: 0.4
+BuildTools: ocamlbuild
+Plugins: META (0.4), DevFiles (0.4)
+
+Executable "test_json_types"
+  Path: .
+  MainIs: test_ppx_json_types.ml
+  Install: false
+  BuildDepends: ppx_json_types, ppx_deriving, ppx_deriving.show, ppx_deriving_yojson

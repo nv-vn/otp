@@ -4,25 +4,19 @@ OCamlVersion: >= 4.02
 Synopsis: OCaml Type Providers
 Authors: nv-vn <nv@cock.li>
 License: GPL
+InstallType: custom (0.4)
 
 FilesAB: src/json_types/META.ab
-
-PreInstallCommand: $ocamlfind install ppx_json_types src/json_types/META
-PreUninstallCommand: $ocamlfind remove ppx_json_types
 
 OASISFormat: 0.4
 BuildTools: ocamlbuild
 Plugins: META (0.4), DevFiles (0.4)
+
+XCustomInstall: ./install.sh
+XCustomUninstall: ocamlfind remove ppx_json_types
 
 Executable "ppx_json_types"
   Path: src/json_types/
   MainIs: json_types.ml
   CompiledObject: best
   BuildDepends: compiler-libs.common, lwt, cohttp.lwt, yojson
-
-Executable "test_json_types"
-  Path: test
-  MainIs: test_ppx_json_types.ml
-  Install: false
-  BuildTools: ppx_json_types, ppx_deriving
-  BuildDepends: ppx_json_types, ppx_deriving, ppx_deriving.show, ppx_deriving_yojson
