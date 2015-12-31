@@ -9,4 +9,6 @@ let _ =
   and str : char_ptr = "memes"
   and xyz : myrecord = {x = ~-1567; y = "stuff"}
   and tup : Conglomerate.t = { xs = ["hello"; "world"]; ys = (5, 10) } in
-  print_endline @@ Conglomerate.to_json tup
+  print_endline @@ Conglomerate.to_string tup;
+  let serialized = Conglomerate.to_json tup in
+  print_endline @@ Yojson.Safe.pretty_to_string serialized

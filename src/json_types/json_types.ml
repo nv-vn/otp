@@ -149,11 +149,11 @@ let struct_of_url url loc =
            ~manifest:(Typ.constr ~loc {txt = Ldot (Lident "Hide", "t"); loc = loc} [])];
        Str.value ~loc Nonrecursive
          [Vb.mk ~loc (Pat.var ~loc {txt = "to_string"; loc = loc})
-                     (Exp.ident ~loc {txt = Ldot (Lident "Hide", "show_t"); loc = loc});
+                     (Exp.ident ~loc {txt = Ldot (Lident "Hide", "show"); loc = loc});
           Vb.mk ~loc (Pat.var ~loc {txt = "to_json"; loc = loc})
-                     (Exp.ident ~loc {txt = Ldot (Lident "Hide", "t_to_yjson"); loc = loc});
+                     (Exp.ident ~loc {txt = Ldot (Lident "Hide", "to_yojson"); loc = loc});
           Vb.mk ~loc (Pat.var ~loc {txt = "of_json"; loc = loc})
-                     (Exp.ident ~loc {txt = Ldot (Lident "Hide", "t_of_yojson"); loc = loc})]]
+                     (Exp.ident ~loc {txt = Ldot (Lident "Hide", "of_yojson"); loc = loc})]]
 
 let rec json_type_mapper argv =
   { default_mapper with

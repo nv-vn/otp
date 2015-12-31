@@ -1,0 +1,25 @@
+{
+  "kind": "record",
+  "val": [
+    {
+      "name": "xs",
+      "type": {
+        "kind": "list",
+        "val": {
+          "kind": "name",
+          "val": "string"
+        }
+      }
+    },
+    {
+      "name": "ys",
+      "type": {
+        "kind": "product",
+        "val": [
+          {"kind": "name", "val": "int"},
+          {"kind": "name", "val": "int"}
+        ]
+      }
+    }
+  ]
+}
