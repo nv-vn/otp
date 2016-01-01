@@ -112,14 +112,18 @@ let struct_of_url ?(extra=false) url loc =
          [Type.mk {txt = "t"; loc = loc}
            ~manifest:(Typ.constr ~loc {txt = Ldot (Lident "Hide", "t"); loc = loc} [])];
        Str.value ~loc Nonrecursive
-         [Vb.mk ~loc (Pat.var ~loc {txt = "to_string"; loc = loc})
+         [Vb.mk ~loc (Pat.var ~loc {txt = "show"; loc = loc})
                      (Exp.ident ~loc {txt = Ldot (Lident "Hide", "show"); loc = loc});
           Vb.mk ~loc (Pat.var ~loc {txt = "to_json"; loc = loc})
                      (Exp.ident ~loc {txt = Ldot (Lident "Hide", "to_yojson"); loc = loc});
           Vb.mk ~loc (Pat.var ~loc {txt = "of_json"; loc = loc})
                      (Exp.ident ~loc {txt = Ldot (Lident "Hide", "of_yojson"); loc = loc})]]
      @ if extra then
-       [[%stri let from_url url =
+       [[%stri let to_string obj =
+                 Yojson.Safe.pretty_to_string (Conglomerate.to_json obj)];
+        [%stri let from_string str =
+                 of_json (Yojson.Safe.from_string str)];
+        [%stri let from_url url =
                  let open Lwt in
                  let open Cohttp in
                  let open Cohttp_lwt_unix in

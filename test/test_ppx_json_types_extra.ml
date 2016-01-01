@@ -8,5 +8,6 @@ let _ =
     print_endline @@ Conglomerate.to_string data;
     let serialized = Conglomerate.to_json data in
     print_endline @@ Yojson.Safe.pretty_to_string serialized;
+    Conglomerate.from_string @@ Yojson.Safe.pretty_to_string serialized;
     return ()
   end
