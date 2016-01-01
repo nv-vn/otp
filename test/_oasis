@@ -1,7 +1,7 @@
-Name: OTP
-Version: 0.1
+Name: OTP-Tests
+Version: 0.2
 OCamlVersion: >= 4.02
-Synopsis: OCaml Type Providers
+Synopsis: Tests for OCaml Type Providers
 Authors: nv-vn <nv@cock.li>
 License: GPL
 
@@ -14,3 +14,9 @@ Executable "test_json_types"
   MainIs: test_ppx_json_types.ml
   Install: false
   BuildDepends: ppx_json_types, ppx_deriving, ppx_deriving.show, ppx_deriving_yojson
+
+Executable "test_json_types_extra"
+  Path: .
+  MainIs: test_ppx_json_types_extra.ml
+  Install: false
+  BuildDepends: ppx_json_types, ppx_deriving, ppx_deriving.show, ppx_deriving_yojson, lwt, cohttp.lwt

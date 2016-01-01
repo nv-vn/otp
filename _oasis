@@ -1,5 +1,5 @@
 Name: OTP
-Version: 0.1
+Version: 0.2
 OCamlVersion: >= 4.02
 Synopsis: OCaml Type Providers
 Authors: nv-vn <nv@cock.li>
@@ -19,4 +19,4 @@ Executable "ppx_json_types"
   Path: src/json_types/
   MainIs: json_types.ml
   CompiledObject: best
-  BuildDepends: compiler-libs.common, lwt, cohttp.lwt, yojson
+  BuildDepends: compiler-libs.common, lwt, cohttp.lwt, yojson, ppx_tools.metaquot

@@ -99,12 +99,12 @@ and create loc name ?(items=Str.type_ ~loc []) ?(names=[]) = function
     create loc name ~items:items' ~names:(names @ [n]) xs
 
 
-let struct_of_url url loc =
+let struct_of_url ?(extra=false) url loc =
   get_json url >>= fun text ->
     let json = Yojson.Basic.from_string text in
     let ty = ty_of_json json in
     let struct_members = make_types "t" loc ty in
-    return @@ Mod.structure ~loc
+    return @@ Mod.structure ~loc begin
       [Str.module_ ~loc
         (Mb.mk ~loc {txt = "Hide"; loc = loc}
           (Mod.structure ~loc [struct_members]));
@@ -118,6 +118,16 @@ let struct_of_url url loc =
                      (Exp.ident ~loc {txt = Ldot (Lident "Hide", "to_yojson"); loc = loc});
           Vb.mk ~loc (Pat.var ~loc {txt = "of_json"; loc = loc})
                      (Exp.ident ~loc {txt = Ldot (Lident "Hide", "of_yojson"); loc = loc})]]
+     @ if extra then
+       [[%stri let from_url url =
+                 let open Lwt in
+                 let open Cohttp in
+                 let open Cohttp_lwt_unix in
+                 (Client.get (Uri.of_string url) >>= fun (resp, body) ->
+                   body |> Cohttp_lwt_body.to_string >|= fun body ->
+                     body) >>= fun text ->
+                       return @@ of_json (Yojson.Safe.from_string text)]]
+     else [] end
 
 let rec json_type_mapper argv =
   { default_mapper with
@@ -132,6 +142,16 @@ let rec json_type_mapper argv =
         | _ ->
           raise (Location.Error
                   (Location.error ~loc "[%json ...] accepts a string, e.g. [%json \"http://google.com\"]"))
+        end
+      | { pmod_attributes; pmod_loc; pmod_desc = Pmod_extension ({txt = "json_extra"; loc}, pstr) } ->
+        begin match pstr with
+        | PStr [{ pstr_desc =
+                  Pstr_eval ({ pexp_loc  = loc;
+                               pexp_desc = Pexp_constant (Const_string (sym, None))}, _)}] ->
+          Lwt_unix.run @@ struct_of_url ~extra:true sym loc
+        | _ ->
+          raise (Location.Error
+                  (Location.error ~loc "[%json_extra ...] accepts a string, e.g. [%json_extra \"http://google.com\"]"))
         end
       | x -> default_mapper.module_expr mapper x
     end;
