@@ -1,5 +1,5 @@
 Name: OTP-Tests
-Version: 0.2
+Version: 0.3
 OCamlVersion: >= 4.02
 Synopsis: Tests for OCaml Type Providers
 Authors: nv-vn <nv@cock.li>

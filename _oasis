@@ -1,5 +1,5 @@
 Name: OTP
-Version: 0.2
+Version: 0.3
 OCamlVersion: >= 4.02
 Synopsis: OCaml Type Providers
 Authors: nv-vn <nv@cock.li>
