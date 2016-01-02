@@ -69,7 +69,7 @@ the following functions will be defined for our module:
 ```ocaml
 module MyModule = sig
   type t
-  val to_string : t -> string
+  val show : t -> string (* Generic `show` *)
   val to_json : t -> Yojson.Safe.json
   val of_json : Yojson.Safe.json -> t
 end
@@ -86,9 +86,11 @@ signature will be:
 ```ocaml
 module MyModule = sig
   type t
-  val to_string : t -> string
+  val show : t -> string (* Generic `show` *)
   val to_json : t -> Yojson.Safe.json
   val of_json : Yojson.Safe.json -> t
   val from_url : string -> t Lwt.t
+  val to_string : t -> string (* JSON-formatted `show` *)
+  val from_string : string -> t
 end
 ```
