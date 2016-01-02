@@ -120,7 +120,7 @@ let struct_of_url ?(extra=false) url loc =
                      (Exp.ident ~loc {txt = Ldot (Lident "Hide", "of_yojson"); loc = loc})]]
      @ if extra then
        [[%stri let to_string obj =
-                 Yojson.Safe.pretty_to_string (Conglomerate.to_json obj)];
+                 Yojson.Safe.pretty_to_string (to_json obj)];
         [%stri let from_string str =
                  of_json (Yojson.Safe.from_string str)];
         [%stri let from_url url =
