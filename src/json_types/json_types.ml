@@ -142,7 +142,7 @@ let rec json_type_mapper argv =
         | PStr [{ pstr_desc =
                   Pstr_eval ({ pexp_loc  = loc;
                                pexp_desc = Pexp_constant (Const_string (sym, None))}, _)}] ->
-          Lwt_unix.run @@ struct_of_url sym loc
+          Lwt_main.run @@ struct_of_url sym loc
         | _ ->
           raise (Location.Error
                   (Location.error ~loc "[%json ...] accepts a string, e.g. [%json \"http://google.com\"]"))
@@ -152,7 +152,7 @@ let rec json_type_mapper argv =
         | PStr [{ pstr_desc =
                   Pstr_eval ({ pexp_loc  = loc;
                                pexp_desc = Pexp_constant (Const_string (sym, None))}, _)}] ->
-          Lwt_unix.run @@ struct_of_url ~extra:true sym loc
+          Lwt_main.run @@ struct_of_url ~extra:true sym loc
         | _ ->
           raise (Location.Error
                   (Location.error ~loc "[%json_extra ...] accepts a string, e.g. [%json_extra \"http://google.com\"]"))
